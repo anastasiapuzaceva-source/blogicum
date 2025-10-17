@@ -16,6 +16,7 @@ from .models import Category, Comment, Post, Profile
 
 POSTS_LIMIT = 10
 
+
 class PublishedPostMixin:
     def get_queryset(self):
         basic_request = Post.objects.filter(
@@ -82,7 +83,10 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse_lazy('blog:profile', kwargs={'username': self.request.user.username})
+        return reverse_lazy(
+            'blog:profile',
+            kwargs={'username': self.request.user.username}
+        )
 
 
 class PostUpdateView(LoginRequiredMixin, UpdateMixin, UpdateView):
@@ -92,6 +96,7 @@ class PostUpdateView(LoginRequiredMixin, UpdateMixin, UpdateView):
 
     def get_success_url(self):
         return reverse('blog:post_detail', kwargs={'pk': self.object.pk})
+
 
 class PostDeleteView(LoginRequiredMixin, DeleteView):
     model = Post
@@ -110,7 +115,6 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
     def post(self, request, *args, **kwargs):
         return self.delete(request, *args, **kwargs)
 
-
     def dispatch(self, request, *args, **kwargs):
         post = get_object_or_404(Post, pk=kwargs['pk'])
 
@@ -120,12 +124,11 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
         return super().dispatch(request, *args, **kwargs)
 
 
-
-
 class CategoryPostListView(PublishedPostMixin, ListView):
     model = Post
     template_name = 'blog/category.html'
     paginate_by = POSTS_LIMIT
+
     def get_queryset(self):
         queryset = super().get_queryset()
         self.category = get_object_or_404(
@@ -190,6 +193,7 @@ class ProfileEditView(LoginRequiredMixin, UpdateView):
 
     def get_object(self, queryset=None):
         return self.request.user
+
 
 class ProfileDetailView(PublishedPostMixin, DetailView):
     model = User

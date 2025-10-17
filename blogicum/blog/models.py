@@ -10,7 +10,6 @@ MAX_LENGTH_TITLE = 256
 MAX_CHARACTER_LENGTH = 50
 
 
-
 class PublishedModel(models.Model):
     is_published = models.BooleanField(
         default=True,
@@ -101,7 +100,7 @@ class Post(PublishedModel):
     )
 
     image = models.ImageField(
-        verbose_name = 'Фото',
+        verbose_name='Фото',
         upload_to='posts_images',
         blank=True,
     )
@@ -130,11 +129,12 @@ class Profile(models.Model):
     nickname = models.CharField(
         max_length=50,
         blank=True,
-        verbose_name = 'Имя пользователя'
+        verbose_name='Имя пользователя'
     )
 
     def __str__(self):
         return f'Профиль пользователя {self.user.username}'
+
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

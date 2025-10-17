@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from .models import Post, Comment, Profile
+from .models import Post, Comment
 
 
 class BlogPostForm(forms.ModelForm):
@@ -29,6 +29,7 @@ class CommentForm(forms.ModelForm):
             })
         }
 
+
 class CustomUserCreationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = User
@@ -39,6 +40,3 @@ class UserEditForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'username', 'email']
-
-
-
