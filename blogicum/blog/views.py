@@ -2,7 +2,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db.models import Count
-from django.shortcuts import get_object_or_404, render
+from django.http import Http404
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import (
@@ -31,6 +32,16 @@ class PublishedPostMixin:
         return basic_request.order_by('-pub_date')
 
 
+class UpdateMixin:
+    def dispatch(self, request, *args, **kwargs):
+        obj = get_object_or_404(Post, pk=kwargs['pk'])
+        if not request.user.is_authenticated:
+            return redirect(f"{reverse_lazy('login')}?next={request.path}")
+        elif obj.author != request.user:
+            return redirect('blog:post_detail', pk=obj.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+
 class IndexListView(PublishedPostMixin, ListView):
     model = Post
     ordering = ['-pub_date']
@@ -50,19 +61,31 @@ class PostDetailView(PublishedPostMixin, DetailView):
         context['comments'] = post.comments.order_by('created_at')
         return context
 
+    def get_object(self, queryset=None):
+        post = get_object_or_404(Post, pk=self.kwargs['pk'])
+        if not post.is_published or post.pub_date > timezone.now():
+            if post.author != self.request.user:
+                raise Http404
+        if post.category and not post.category.is_published:
+            if post.author != self.request.user:
+                raise Http404
+        return post
+
 
 class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
     form_class = BlogPostForm
     template_name = 'blog/create.html'
-    success_url = reverse_lazy('blog:index')
 
     def form_valid(self, form):
         form.instance.author = self.request.user
         return super().form_valid(form)
 
+    def get_success_url(self):
+        return reverse_lazy('blog:profile', kwargs={'username': self.request.user.username})
 
-class PostUpdateView(LoginRequiredMixin, UpdateView):
+
+class PostUpdateView(LoginRequiredMixin, UpdateMixin, UpdateView):
     model = Post
     form_class = BlogPostForm
     template_name = 'blog/create.html'
@@ -86,6 +109,17 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
 
     def post(self, request, *args, **kwargs):
         return self.delete(request, *args, **kwargs)
+
+
+    def dispatch(self, request, *args, **kwargs):
+        post = get_object_or_404(Post, pk=kwargs['pk'])
+
+        if not (post.author == request.user or request.user.is_staff):
+            raise Http404("Удалять может только автор или администратор.")
+
+        return super().dispatch(request, *args, **kwargs)
+
+
 
 
 class CategoryPostListView(PublishedPostMixin, ListView):
@@ -170,21 +204,29 @@ class ProfileDetailView(PublishedPostMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         profile = self.object
-        user = profile.user
+        author = profile.user
+
         posts_list = (
-            Post.objects.filter(
-                author=user,
-            )
+            Post.objects.filter(author=author)
             .select_related('author', 'location', 'category')
             .annotate(comment_count=Count('comments'))
             .order_by('-pub_date')
         )
 
+        if self.request.user != author and not self.request.user.is_staff:
+            visible_posts = []
+            for post in posts_list:
+                if post.is_published and post.pub_date <= timezone.now():
+                    if not post.category or post.category.is_published:
+                        visible_posts.append(post)
+            posts_list = visible_posts
+
         paginator = Paginator(posts_list, self.paginate_by)
         page_number = self.request.GET.get('page')
+
         context.update({
             'posts': posts_list,
             'page_obj': paginator.get_page(page_number),
-            'profile': user,
+            'profile': author,
         })
         return context
