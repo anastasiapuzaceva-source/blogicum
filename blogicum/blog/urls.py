@@ -8,8 +8,8 @@ app_name = 'blog'
 post_urls = [
     path(
         '<int:post_id>/',
-            views.PostDetailView.as_view(),
-            name='post_detail'
+        views.PostDetailView.as_view(),
+        name='post_detail'
     ),
     path(
         '<int:post_id>/',
