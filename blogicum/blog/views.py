@@ -1,9 +1,6 @@
-from unicodedata import category
-
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
-from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -39,7 +36,11 @@ class PostDetailView(PublishedPostMixin, DetailView):
         return context
 
     def get_object(self, queryset=None):
-        queryset = Post.objects.select_related('author', 'category', 'location')
+        queryset = Post.objects.select_related(
+            'author',
+            'category',
+            'location'
+        )
         post = get_object_or_404(queryset, pk=self.kwargs['post_id'])
         if post.author != self.request.user:
             queryset = queryset.filter(
@@ -50,6 +51,7 @@ class PostDetailView(PublishedPostMixin, DetailView):
             post = get_object_or_404(queryset, pk=self.kwargs['post_id'])
 
         return post
+
 
 class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
@@ -140,6 +142,7 @@ class CommentUpdateView(CommentMixin, UpdateView):
 
 class CommentDeleteView(CommentMixin, DeleteView):
     pass
+
 
 class RegistrationCreateView(CreateView):
     template_name = 'registration/registration_form.html'

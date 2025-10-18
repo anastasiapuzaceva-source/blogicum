@@ -7,7 +7,10 @@ from django.utils import timezone
 from .models import Post, Comment
 
 
-def get_posts_queryset(manager=Post.objects, filter_published=False, annotate_comments=False):
+def get_posts_queryset(
+        manager=Post.objects,
+        filter_published=False,
+        annotate_comments=False):
     queryset = manager.select_related('author', 'location', 'category')
     if filter_published:
         queryset = queryset.filter(
@@ -20,6 +23,7 @@ def get_posts_queryset(manager=Post.objects, filter_published=False, annotate_co
             comment_count=Count('comments')
         ).order_by('-pub_date')
     return queryset
+
 
 class PublishedPostMixin:
     def get_queryset(self):
@@ -40,7 +44,9 @@ class IsAuthorMixin(LoginRequiredMixin, UserPassesTestMixin):
 
     def handle_no_permission(self):
         if not self.request.user.is_authenticated:
-            return redirect(f"{reverse_lazy('login')}?next={self.request.path}")
+            return redirect(
+                f"{reverse_lazy('login')}?next={self.request.path}"
+            )
 
         post_id = self.kwargs.get('post_id')
         if not post_id and 'comment_id' in self.kwargs:
@@ -63,4 +69,7 @@ class CommentMixin(IsAuthorMixin):
         )
 
     def get_success_url(self):
-        return reverse('blog:post_detail', kwargs={'post_id': self.object.post.pk})
+        return reverse(
+            'blog:post_detail',
+            kwargs={'post_id': self.object.post.pk}
+        )
