@@ -115,42 +115,25 @@ class Post(PublishedModel):
         return self.title[:MAX_CHARACTER_LENGTH]
 
 
-class Profile(models.Model):
-    user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE,
-    )
-    bio = models.TextField(
-        max_length=MAX_LENGTH_TITLE,
-        blank=True,
-        verbose_name='О себе',
-    )
-
-    nickname = models.CharField(
-        max_length=50,
-        blank=True,
-        verbose_name='Имя пользователя'
-    )
-
-    def __str__(self):
-        return f'Профиль пользователя {self.user.username}'
-
-
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance)
-
-
 class Comment(models.Model):
     text = models.TextField('Текст комментария')
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
         related_name='comments',
+        verbose_name='Публикация',
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата и время создания'
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name = 'Автор комментария',
+    )
 
     class Meta:
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
         ordering = ('created_at',)

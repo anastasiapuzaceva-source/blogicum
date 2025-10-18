@@ -10,9 +10,9 @@ class BlogPostForm(forms.ModelForm):
         model = Post
         fields = ('title', 'text', 'category', 'location', 'pub_date', 'image')
         widgets = {
-            'pub_date': forms.DateInput(
-                attrs={'type': 'date'},
-                format='%Y-%m-%d'
+            'pub_date': forms.DateTimeInput(
+                attrs={'type': 'datetime-local'},
+                format="%Y-%m-%dT%H:%M"
             ),
         }
 
@@ -30,7 +30,7 @@ class CommentForm(forms.ModelForm):
         }
 
 
-class CustomUserCreationForm(UserCreationForm):
+class RegistrationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = User
         fields = ('username', 'email')
