@@ -137,4 +137,7 @@ class Comment(models.Model):
         ordering = ('created_at',)
 
     def __str__(self):
-        return f'Комментарий от {self.author}: {self.text[:MAX_CHARACTER_LENGTH]}'
+        return (
+        f'Комментарий от {self.author}: '
+        f'{self.text[:MAX_CHARACTER_LENGTH]}'
+    )
