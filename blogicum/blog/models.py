@@ -141,4 +141,3 @@ class Comment(models.Model):
             f'Комментарий от {self.author}: '
             f'{self.text[:MAX_CHARACTER_LENGTH]}'
         )
-
