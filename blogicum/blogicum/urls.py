@@ -2,11 +2,10 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth.views import LogoutView
-from django.urls import include, path
-
+from django.urls import include, path, re_path
 
 from blog.views import RegistrationCreateView
-
+from django.views.static import serve
 
 urlpatterns = [
     path('', include('blog.urls', namespace='blog')),
@@ -19,7 +18,13 @@ urlpatterns = [
         RegistrationCreateView.as_view(),
         name='registration',
     ),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+if not settings.DEBUG:
+    urlpatterns += [
+        re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
+        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    ]
 
 
 handler500 = 'pages.views.server_error'

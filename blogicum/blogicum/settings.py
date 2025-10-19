@@ -26,8 +26,8 @@ SECRET_KEY = 'django-insecure-4sct=*ya_$+#ldrq#b+ke^88910&z_i%$&+uqn+*g!rv#)t$g7
 DEBUG = False
 
 ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
+    'www.Anastasija.pythonanywhere.com',
+    'Anastasija.pythonanywhere.com',
 ]
 
 
@@ -128,8 +128,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
-    BASE_DIR / 'static_dev'
+    BASE_DIR / 'static_dev',
 ]
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
@@ -140,6 +142,8 @@ CSRF_FAILURE_VIEW = 'pages.views.csrf_failure'
 LOGIN_REDIRECT_URL = 'blog:index'
 
 LOGIN_URL = '/auth/login/'
+
+MEDIA_URL = '/media/'
 
 MEDIA_ROOT = BASE_DIR / 'media'
 

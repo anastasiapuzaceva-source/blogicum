@@ -1,28 +1,9 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
-from django.utils import timezone
 
 from .models import Post, Comment
-
-
-def get_posts_queryset(
-        manager=Post.objects,
-        filter_published=False,
-        annotate_comments=False):
-    queryset = manager.select_related('author', 'location', 'category')
-    if filter_published:
-        queryset = queryset.filter(
-            is_published=True,
-            category__is_published=True,
-            pub_date__lte=timezone.now(),
-        )
-    if annotate_comments:
-        queryset = queryset.annotate(
-            comment_count=Count('comments')
-        ).order_by('-pub_date')
-    return queryset
+from .utils import get_posts_queryset
 
 
 class PublishedPostMixin:
@@ -36,10 +17,7 @@ class PublishedPostMixin:
 
 class IsAuthorMixin(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self):
-        if 'comment_id' in self.kwargs:
-            obj = get_object_or_404(Comment, pk=self.kwargs['comment_id'])
-        else:
-            obj = get_object_or_404(Post, pk=self.kwargs['post_id'])
+        obj = self.get_object()
         return obj.author == self.request.user
 
     def handle_no_permission(self):
@@ -49,9 +27,6 @@ class IsAuthorMixin(LoginRequiredMixin, UserPassesTestMixin):
             )
 
         post_id = self.kwargs.get('post_id')
-        if not post_id and 'comment_id' in self.kwargs:
-            comment = get_object_or_404(Comment, pk=self.kwargs['comment_id'])
-            post_id = comment.post.pk
         return redirect('blog:post_detail', post_id=post_id)
 
 

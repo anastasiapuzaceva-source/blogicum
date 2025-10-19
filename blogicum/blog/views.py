@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
@@ -13,13 +14,13 @@ from django.views.generic import (
 from .forms import BlogPostForm, CommentForm, UserEditForm
 from .mixin import PublishedPostMixin, IsAuthorMixin, CommentMixin
 from .models import Category, Comment, Post
-from blogicum.settings import POSTS_LIMIT
+from .utils import get_posts_queryset
 
 
 class IndexListView(PublishedPostMixin, ListView):
     model = Post
     ordering = ['-pub_date']
-    paginate_by = POSTS_LIMIT
+    paginate_by = settings.POSTS_LIMIT
     template_name = 'blog/index.html'
 
 
@@ -36,18 +37,12 @@ class PostDetailView(PublishedPostMixin, DetailView):
         return context
 
     def get_object(self, queryset=None):
-        queryset = Post.objects.select_related(
-            'author',
-            'category',
-            'location'
+        post = get_object_or_404(
+            get_posts_queryset(filter_published=False),
+            pk=self.kwargs['post_id']
         )
-        post = get_object_or_404(queryset, pk=self.kwargs['post_id'])
         if post.author != self.request.user:
-            queryset = queryset.filter(
-                is_published=True,
-                pub_date__lte=timezone.now(),
-                category__is_published=True,
-            )
+            queryset = get_posts_queryset(filter_published=True)
             post = get_object_or_404(queryset, pk=self.kwargs['post_id'])
 
         return post
@@ -85,19 +80,17 @@ class PostDeleteView(IsAuthorMixin, DeleteView):
     pk_url_kwarg = 'post_id'
     success_url = reverse_lazy('blog:index')
 
-    def dispatch(self, request, *args, **kwargs):
-        post = get_object_or_404(Post, pk=kwargs['post_id'])
-
-        if not (post.author == request.user or request.user.is_staff):
-            raise Http404("Удалять может только автор или администратор.")
-
-        return super().dispatch(request, *args, **kwargs)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = BlogPostForm(instance=self.object)
+        context['is_delete'] = True
+        return context
 
 
 class CategoryPostListView(PublishedPostMixin, ListView):
     model = Post
     template_name = 'blog/category.html'
-    paginate_by = POSTS_LIMIT
+    paginate_by = settings.POSTS_LIMIT
 
     def get_category(self):
         return get_object_or_404(
@@ -124,7 +117,7 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
     pk_url_kwarg = 'post_id'
 
     def form_valid(self, form, **kwargs):
-        post_id = self.kwargs.get('post_id') or self.kwargs.get('pk')
+        post_id = self.kwargs.get('post_id')
         post = get_object_or_404(Post, pk=post_id)
         form.instance.author = self.request.user
         form.instance.post = post
@@ -132,7 +125,7 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        post_id = self.kwargs.get('post_id') or self.kwargs.get('pk')
+        post_id = self.kwargs.get('post_id')
         return reverse('blog:post_detail', kwargs={'post_id': post_id})
 
 
@@ -163,27 +156,18 @@ class ProfileEditView(LoginRequiredMixin, UpdateView):
 class ProfileDetailView(PublishedPostMixin, ListView):
     model = User
     template_name = 'blog/profile.html'
-    paginate_by = POSTS_LIMIT
+    paginate_by = settings.POSTS_LIMIT
 
     def get_profile_user(self):
         return get_object_or_404(User, username=self.kwargs['username'])
 
     def get_queryset(self):
         author = self.get_profile_user()
-        queryset = (
-            Post.objects.filter(author=author)
-            .select_related('author', 'location', 'category')
-            .annotate(comment_count=Count('comments'))
-            .order_by('-pub_date')
+        queryset = get_posts_queryset(
+            manager=Post.objects.filter(author=author),
+            filter_published=False,
+            annotate_comments=True
         )
-        if self.request.user != author and not self.request.user.is_staff:
-            queryset = queryset.filter(
-                is_published=True,
-                pub_date__lte=timezone.now(),
-            ).filter(
-                Q(category__isnull=True) | Q(category__is_published=True)
-            )
-
         return queryset
 
     def get_context_data(self, **kwargs):
