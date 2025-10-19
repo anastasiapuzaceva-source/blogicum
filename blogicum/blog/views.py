@@ -2,11 +2,8 @@ from django.conf import settings
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
-from django.db.models import Count, Q
-from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse, reverse_lazy
-from django.utils import timezone
 from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, UpdateView
 )
