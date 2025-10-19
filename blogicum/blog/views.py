@@ -161,8 +161,8 @@ class ProfileDetailView(PublishedPostMixin, ListView):
     def get_queryset(self):
         author = self.get_profile_user()
         queryset = get_posts_queryset(
-            manager=Post.objects.filter(author=author),
-            filter_published=False,
+            manager=author.posts,
+            filter_published=self.request.user != author,
             annotate_comments=True
         )
         return queryset
