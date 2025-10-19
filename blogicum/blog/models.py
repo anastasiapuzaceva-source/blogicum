@@ -138,6 +138,7 @@ class Comment(models.Model):
 
     def __str__(self):
         return (
-        f'Комментарий от {self.author}: '
-        f'{self.text[:MAX_CHARACTER_LENGTH]}'
-    )
+            f'Комментарий от {self.author}: '
+            f'{self.text[:MAX_CHARACTER_LENGTH]}'
+        )
+
